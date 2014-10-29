@@ -1,0 +1,21 @@
+{
+  "name": "financee-globangular",
+  "version": "0.1.0",
+  "authors": [
+    "Thom MF <thom@hat-framework.com>"
+  ],
+  "description": "Finance angularjs utility library",
+  "moduleType": [
+    "node"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/Finance-e/globangular",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {}
+}
