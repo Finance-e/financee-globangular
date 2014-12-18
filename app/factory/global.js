@@ -10,28 +10,28 @@ globalApp.factory('$global',['$http','cfpLoadingBar',function($http, cfpLoadingB
                 $http.post(url,$.param(vars),{headers:{'Content-Type': 'application/x-www-form-urlencoded'}})
                     .success(function(data){
                         requesting[url] = false;
-                        callback(data);
                         cfpLoadingBar.complete();
+                        callback(data);
                     })
                     .error(function(){
                         requesting[url] = false;
+                        cfpLoadingBar.complete();
                         var out = {'erro':'Falha ao acessar serviço!', 'status':'0'};
                         callback(out);
-                        cfpLoadingBar.complete();
                     });
             }
             else{
                 $http.get(url)
                     .success(function(data){
                         requesting[url] = false;
-                        callback(data);
                         cfpLoadingBar.complete();
+                        callback(data);
                     })
                     .error(function(){
                         requesting[url] = false;
+                        cfpLoadingBar.complete();
                         var out = {'erro':'Falha ao acessar serviço!', 'status':'0'};
                         callback(out);
-                        cfpLoadingBar.complete();
                     });
             }
         }

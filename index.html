@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <title>App js usage examples</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="bower_components/angular-loading-bar/build/loading-bar.min.css"/>
+    </head>
+    <body>
+        <div ng-app="testApp" ng-controller="testeCTRL">
+            
+            <ul>
+                <li ng-repeat="language in vars">{{language.name}}</li>
+            </ul>
+            
+        </div>
+        <script type="text/javascript" src="bower_components/angular/angular.min.js"></script>
+        <script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
+        <script type="text/javascript" src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+        <script type="text/javascript" src="bower_components/angular-loading-bar/build/loading-bar.min.js"></script>
+        <script type="text/javascript" src="dist/financee-globangular.min.js"></script>
+        <script type="text/javascript">
+            var testApp = angular.module('testApp', ['globalApp'])
+                .config(['$apiProvider', function ($apiProvider) {
+                    $apiProvider.registerServices({
+                        'list_cache'  :{type:'list', 'urltype':'cache' , 'url':'fakeapi/cache/list.js' },
+                        'get_cache'   :{type:'get' , 'urltype':'cache' , 'url':'fakeapi/cache/get.js'  },
+                        'list_common' :{type:'list', 'urltype':'common', 'url':'fakeapi/common/list.js'},
+                        'get_common'  :{type:'get' , 'urltype':'common', 'url':'fakeapi/common/get.js' },
+                        'set_common'  :{type:'set' , 'urltype':'common', 'url':'fakeapi/common/set.js' },
+                        'drop_common' :{type:'drop', 'urltype':'common', 'url':'fakeapi/common/drop.js'}
+                    });
+                }])
+                .controller('testeCTRL',['$api','$scope',function($api,$scope) {
+                      $scope.vars = [];
+                      $api.list('list_cache', function(vars){
+                          $scope.vars = vars;
+                      });
+                }]);
+            
+        </script>
+    </body>
+</html>

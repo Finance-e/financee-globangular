@@ -7,7 +7,7 @@ module.exports = function( grunt ) {
         connect:{
             server:{
                 options:{
-                    port:9001,
+                    port:9010,
                     hostname: 'localhost',
                     open: true
                 }
@@ -17,8 +17,10 @@ module.exports = function( grunt ) {
             dist: {
               files: {
                 'dist/financee-globangular.min.js': [
-                    'app/app.js','app/directive/ngReallyClick.js',
-                    'app/factory/cache.js','app/factory/global.js','app/factory/newtab.js']
+                    'app/app.js','app/directive/ngReallyClick.js','app/filter/dateToISO.js',
+                    'app/factory/cache.js','app/factory/global.js','app/factory/newtab.js',
+                    'app/factory/api.js'
+                ]
               }
             }
         },
