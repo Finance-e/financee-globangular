@@ -30,7 +30,7 @@ globalApp.provider('$api', function() {
             if(this.services[service].type === type){return true;}
             console.log('Method '+type+' is incorrect for service '  + service + '. Use method ' + this.services[service].type+".");
             return false;
-        };
+        }
 
         function executeCallback(service,fn, params){
             if(typeof(fn) !== 'function'){return true;}
@@ -39,18 +39,18 @@ globalApp.provider('$api', function() {
                 return true;
             }
             return false;
-        };
+        }
 
         function hat_callback(json, force){
-            if(typeof json['status'] !== "undefined"){
-                if(json['status'] == '1'){
-                    if(typeof(json['success']) !== 'undefined'){message_success(json['success'], 5000);}
-                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");};
+            if(typeof json.status !== "undefined"){
+                if(json.status == '1'){
+                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
+                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
                     return true;
                 }
                 else{
-                    if(typeof(json['erro']) !== 'undefined'){message_erro(json['erro'], 5000);}
-                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");};
+                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
+                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
                     return false;
                 }
             }
@@ -59,7 +59,7 @@ globalApp.provider('$api', function() {
                 return false;
             }
             return true;
-        };
+        }
 
         function get(service, fn, params){
             //var self = this;
@@ -75,14 +75,14 @@ globalApp.provider('$api', function() {
                 $cache.save(service+'/'+params, data);
                 //self.hat_callback(data, true);
             });
-        };
+        }
 
         function save(service, data, fn){
             if(false === this.serviceExists(service, 'set')){return;}
             if(typeof data === 'undefined'){return;}
             var url = getBaseURL(this.services[service].url)+this.getVariables;
             $global.request(url,fn, data);
-        };
+        }
 
         function list(service, fn, params){
             if(false === this.serviceExists(service, 'list')){return;}
@@ -104,7 +104,7 @@ globalApp.provider('$api', function() {
                 self.hat_callback(data, false);
                 if(self.cList){$cache.save(s, data);}
             });
-        };
+        }
 
         function drop(service, params, fn){
             if(typeof params !== 'string'){return;}
@@ -112,7 +112,7 @@ globalApp.provider('$api', function() {
             var url = getBaseURL(this.services[service].url);
             url+='/'+params+this.getVariables;
             $global.request(url,fn);
-        };
+        }
         
         return {
             list            : list,

@@ -1,5 +1,4 @@
 globalApp.directive('ngReallyClick', ['$modal', function($modal) {
-
       var ModalInstanceCtrl = function($scope, $modalInstance) {
         $scope.ok = function() {
           $modalInstance.close();
