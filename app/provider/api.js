@@ -15,12 +15,32 @@ globalApp.provider('$api', function() {
     };
         
     this.$get = ['$cache','$global', function ($cache,$global) {
-            
+                    
         function getBaseURL(filename) {
             var base = window.location.protocol+"//"+window.location.host+"/";
             if(typeof(filename) !== 'undefined'){base += filename;}
             return base;
         }
+        function hat_callback(json, force){
+            if(typeof json.status !== "undefined"){
+                if(json.status === '1' || json.status === 1){
+                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
+                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
+                    return true;
+                }
+                else{
+                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
+                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                    return false;
+                }
+            }
+            if(force === true){
+                message_erro("Falha ao receber resposta do servidor!");
+                return false;
+            }
+            return true;
+        }
+        
         function serviceExists(service, type){
             //console.log(service);
             if(typeof (this.services[service]) === 'undefined'){
@@ -39,30 +59,9 @@ globalApp.provider('$api', function() {
                 return true;
             }
             return false;
-        }
-
-        function hat_callback(json, force){
-            if(typeof json.status !== "undefined"){
-                if(json.status == '1'){
-                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
-                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
-                    return true;
-                }
-                else{
-                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
-                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
-                    return false;
-                }
-            }
-            if(force === true){
-                message_erro("Falha ao receber resposta do servidor!");
-                return false;
-            }
-            return true;
-        }
+        }        
 
         function get(service, fn, params){
-            //var self = this;
             if(typeof params !== 'string'){params = '';}
             else{params = "/"+params;}
             if(false === this.serviceExists(service, 'get')){return;}
@@ -73,7 +72,7 @@ globalApp.provider('$api', function() {
             $global.request(url, function(data){
                 fn(data);
                 $cache.save(service+'/'+params, data);
-                //self.hat_callback(data, true);
+                //hat_callback(data, true);
             });
         }
 
@@ -101,7 +100,7 @@ globalApp.provider('$api', function() {
 
             $global.request(url, function(data){
                 fn(data);
-                self.hat_callback(data, false);
+                hat_callback(data, false);
                 if(self.cList){$cache.save(s, data);}
             });
         }

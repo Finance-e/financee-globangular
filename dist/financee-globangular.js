@@ -60,23 +60,17 @@ globalApp.directive('ngReallyClick', ['$modal', function($modal) {
         },
         link: function(scope, element, attrs) {
           element.bind('click', function() {
-            var message = attrs.ngReallyMessage || "Are you sure ?";
-
+            var message = attrs.ngReallyMessage || "Você realmente deseja prosseguir ?";
             var modalHtml = '<div class="modal-body">' + message + '</div>';
             modalHtml += '<div class="modal-footer"><button class="btn btn-primary" ng-click="ok()">OK</button><button class="btn btn-warning" ng-click="cancel()">Cancel</button></div>';
-
             var modalInstance = $modal.open({
               template: modalHtml,
               controller: ModalInstanceCtrl
             });
-
             modalInstance.result.then(function() {
               scope.ngReallyClick({item:scope.item}); //raise an error : $digest already in progress
             }, function() {
-              //Modal dismissed
-            });
-            //*/
-            
+            });            
           });
 
         }
@@ -103,38 +97,47 @@ globalApp.factory('$cache',[function(){
 }]);
 globalApp.factory('$global',['$http','cfpLoadingBar',function($http, cfpLoadingBar){
     var requesting = {};
+    var isFunction = function(functionToCheck) {
+        var getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+    };
+    var stop = function(url){
+        requesting[url] = false;
+        cfpLoadingBar.complete();
+    };
+    var getMsgErro = function(data, status){
+        //console.log(data, status);
+        var s = (typeof status !== 'undefined')?status:'0';
+        var out = {'erro':'Falha ao acessar serviço!', 'status':s};
+        return out;
+    };
     return {
         request : function(url,callback, vars){
             if(typeof requesting[url] === 'undefined'){requesting[url] = false;}
+            if(false === isFunction(callback)){return;}
             if(requesting[url] === true){return;}
             requesting[url] = true;
             cfpLoadingBar.start();
             if(angular.isDefined(vars)){
                 $http.post(url,$.param(vars),{headers:{'Content-Type': 'application/x-www-form-urlencoded'}})
                     .success(function(data){
-                        requesting[url] = false;
-                        cfpLoadingBar.complete();
+                        stop(url);
                         callback(data);
                     })
-                    .error(function(){
-                        requesting[url] = false;
-                        cfpLoadingBar.complete();
-                        var out = {'erro':'Falha ao acessar serviço!', 'status':'0'};
-                        callback(out);
+                    .error(function(data, status){
+                        stop(url);
+                        callback(getMsgErro(data, status));
                     });
             }
             else{
                 $http.get(url)
                     .success(function(data){
-                        requesting[url] = false;
-                        cfpLoadingBar.complete();
+                        stop(url);
                         callback(data);
                     })
-                    .error(function(){
-                        requesting[url] = false;
-                        cfpLoadingBar.complete();
-                        var out = {'erro':'Falha ao acessar serviço!', 'status':'0'};
-                        callback(out);
+                    .error(function(data, status){
+                        stop(url);
+                        callback(getMsgErro(data, status));
                     });
             }
         }
@@ -187,12 +190,32 @@ globalApp.provider('$api', function() {
     };
         
     this.$get = ['$cache','$global', function ($cache,$global) {
-            
+                    
         function getBaseURL(filename) {
             var base = window.location.protocol+"//"+window.location.host+"/";
             if(typeof(filename) !== 'undefined'){base += filename;}
             return base;
         }
+        function hat_callback(json, force){
+            if(typeof json.status !== "undefined"){
+                if(json.status === '1' || json.status === 1){
+                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
+                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
+                    return true;
+                }
+                else{
+                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
+                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                    return false;
+                }
+            }
+            if(force === true){
+                message_erro("Falha ao receber resposta do servidor!");
+                return false;
+            }
+            return true;
+        }
+        
         function serviceExists(service, type){
             //console.log(service);
             if(typeof (this.services[service]) === 'undefined'){
@@ -211,30 +234,9 @@ globalApp.provider('$api', function() {
                 return true;
             }
             return false;
-        }
-
-        function hat_callback(json, force){
-            if(typeof json.status !== "undefined"){
-                if(json.status == '1'){
-                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
-                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
-                    return true;
-                }
-                else{
-                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
-                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
-                    return false;
-                }
-            }
-            if(force === true){
-                message_erro("Falha ao receber resposta do servidor!");
-                return false;
-            }
-            return true;
-        }
+        }        
 
         function get(service, fn, params){
-            //var self = this;
             if(typeof params !== 'string'){params = '';}
             else{params = "/"+params;}
             if(false === this.serviceExists(service, 'get')){return;}
@@ -245,7 +247,7 @@ globalApp.provider('$api', function() {
             $global.request(url, function(data){
                 fn(data);
                 $cache.save(service+'/'+params, data);
-                //self.hat_callback(data, true);
+                //hat_callback(data, true);
             });
         }
 
@@ -273,7 +275,7 @@ globalApp.provider('$api', function() {
 
             $global.request(url, function(data){
                 fn(data);
-                self.hat_callback(data, false);
+                hat_callback(data, false);
                 if(self.cList){$cache.save(s, data);}
             });
         }
