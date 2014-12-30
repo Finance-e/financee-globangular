@@ -1,4 +1,6 @@
-globalApp.directive('ngReallyClick', ['$modal', function($modal) {
+(function () {
+    'use strict';
+    globalApp.directive('ngReallyClick', ['$modal', function($modal) {
       var ModalInstanceCtrl = function($scope, $modalInstance) {
         $scope.ok = function() {
           $modalInstance.close();
@@ -34,3 +36,4 @@ globalApp.directive('ngReallyClick', ['$modal', function($modal) {
       };
     }
   ]);
+}());

@@ -1,4 +1,6 @@
-globalApp.directive('navMenu', function($location) {
+(function () {
+   'use strict';
+   globalApp.directive('navMenu', function($location) {
   return function(scope, element, attrs) {
     var links = element.find('a'),
         onClass = attrs.navMenu || 'on',
@@ -37,3 +39,4 @@ globalApp.directive('navMenu', function($location) {
     });
   };
 });
+}());

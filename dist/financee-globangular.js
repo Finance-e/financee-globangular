@@ -1,8 +1,15 @@
 var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate', 'ui.bootstrap']);
-globalApp.config(['cfpLoadingBarProvider', function(cfpLoadingBarProvider) {
-    cfpLoadingBarProvider.includeSpinner = true;
-}]);
-globalApp.directive('navMenu', function($location) {
+(function () {
+    'use strict';
+    globalApp.config(['cfpLoadingBarProvider', function(cfpLoadingBarProvider) {
+        cfpLoadingBarProvider.includeSpinner = true;
+    }]);
+}());
+
+
+(function () {
+   'use strict';
+   globalApp.directive('navMenu', function($location) {
   return function(scope, element, attrs) {
     var links = element.find('a'),
         onClass = attrs.navMenu || 'on',
@@ -41,7 +48,10 @@ globalApp.directive('navMenu', function($location) {
     });
   };
 });
-globalApp.directive('ngReallyClick', ['$modal', function($modal) {
+}());
+(function () {
+    'use strict';
+    globalApp.directive('ngReallyClick', ['$modal', function($modal) {
       var ModalInstanceCtrl = function($scope, $modalInstance) {
         $scope.ok = function() {
           $modalInstance.close();
@@ -77,227 +87,237 @@ globalApp.directive('ngReallyClick', ['$modal', function($modal) {
       };
     }
   ]);
-
-globalApp.factory('$cache',[function(){
-    var cache = {}; // end urls
-    return {
-        get : function(name){
-            return this.has(name)?cache[name]:"";
-        },
-        save : function(name, data){
-            cache[name] = data;
-        },
-        drop : function(name){
-            if(this.has(name)){cache.splice (name, 1);}
-        },
-        has: function(name){
-            return (typeof cache[name] !== 'undefined');
-        }
-    };
-}]);
-globalApp.factory('$global',['$http','cfpLoadingBar',function($http, cfpLoadingBar){
-    var requesting = {};
-    var isFunction = function(functionToCheck) {
-        var getType = {};
-        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
-    };
-    var stop = function(url){
-        requesting[url] = false;
-        cfpLoadingBar.complete();
-    };
-    var getMsgErro = function(data, status){
-        //console.log(data, status);
-        var s = (typeof status !== 'undefined')?status:'0';
-        var out = {'erro':'Falha ao acessar serviço!', 'status':s};
-        return out;
-    };
-    return {
-        request : function(url,callback, vars){
-            if(typeof requesting[url] === 'undefined'){requesting[url] = false;}
-            if(false === isFunction(callback)){return;}
-            if(requesting[url] === true){return;}
-            requesting[url] = true;
-            cfpLoadingBar.start();
-            if(angular.isDefined(vars)){
-                $http.post(url,$.param(vars),{headers:{'Content-Type': 'application/x-www-form-urlencoded'}})
-                    .success(function(data){
-                        stop(url);
-                        callback(data);
-                    })
-                    .error(function(data, status){
-                        stop(url);
-                        callback(getMsgErro(data, status));
-                    });
-            }
-            else{
-                $http.get(url)
-                    .success(function(data){
-                        stop(url);
-                        callback(data);
-                    })
-                    .error(function(data, status){
-                        stop(url);
-                        callback(getMsgErro(data, status));
-                    });
-            }
-        }
-    };
-}]);
-
-globalApp.factory('$newtab',[function(){
-    return {
-        open: function(url, data, method, target) {
-            var form = document.createElement("form");
-            form.action = url;
-            form.method = method || 'post';
-            form.target = target || "_blank";
-            if (data) {
-              for (var key in data) {
-                var input = document.createElement("textarea");
-                input.name = key;
-                input.value = typeof data[key] === "object" ? JSON.stringify(data[key]) : data[key];
-                form.appendChild(input);
-              }
-            }
-            form.style.display = 'none';
-            document.body.appendChild(form);
-            form.submit();
-        }
-    };
-}]);
-globalApp.filter('dateToISO', function() {
-    return function(input) {
-        if(input === null || input === "0000-00-00" || input === "0000-00-00 00:00:00"){return "";}
-        input = new Date(input).toISOString();
-        return input;
-    };
-});
-
-//provider style, full blown, configurable version     
-globalApp.provider('$api', function() {
-
-    this.services     = {};
-    this.cList        = false;
-    this.getVariables = '';
-    this.registerServices = function(serv){
-        this.services = serv;
-    };
-    this.cacheList = function(bool){
-        this.cList = bool;
-    };
-    this.concatInUrl = function(getVariables){
-        this.getVariables = getVariables;
-    };
-        
-    this.$get = ['$cache','$global', function ($cache,$global) {
-                    
-        function getBaseURL(filename) {
-            var base = window.location.protocol+"//"+window.location.host+"/";
-            if(typeof(filename) !== 'undefined'){base += filename;}
-            return base;
-        }
-        function hat_callback(json, force){
-            if(typeof json.status !== "undefined"){
-                if(json.status === '1' || json.status === 1){
-                    if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
-                    else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
-                    return true;
+}());
+(function () {
+   'use strict';
+    globalApp.factory('$cache',[function(){
+     var cache = {}; // end urls
+     return {
+         get : function(name){
+             return this.has(name)?cache[name]:"";
+         },
+         save : function(name, data){
+             cache[name] = data;
+         },
+         drop : function(name){
+             if(this.has(name)){cache.splice (name, 1);}
+         },
+         has: function(name){
+             return (typeof cache[name] !== 'undefined');
+         }
+     };
+    }]);
+}());
+(function () {
+   'use strict';
+    globalApp.factory('$global',['$http','cfpLoadingBar',function($http, cfpLoadingBar){
+        var requesting = {};
+        var isFunction = function(functionToCheck) {
+            var getType = {};
+            return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+        };
+        var stop = function(url){
+            requesting[url] = false;
+            cfpLoadingBar.complete();
+        };
+        var getMsgErro = function(data, status){
+            //console.log(data, status);
+            var s = (typeof status !== 'undefined')?status:'0';
+            var out = {'erro':'Falha ao acessar serviço!', 'status':s};
+            return out;
+        };
+        return {
+            request : function(url,callback, vars){
+                if(typeof requesting[url] === 'undefined'){requesting[url] = false;}
+                if(false === isFunction(callback)){return;}
+                if(requesting[url] === true){return;}
+                requesting[url] = true;
+                cfpLoadingBar.start();
+                if(angular.isDefined(vars)){
+                    $http.post(url,$.param(vars),{headers:{'Content-Type': 'application/x-www-form-urlencoded'}})
+                        .success(function(data){
+                            stop(url);
+                            callback(data);
+                        })
+                        .error(function(data, status){
+                            stop(url);
+                            callback(getMsgErro(data, status));
+                        });
                 }
                 else{
-                    if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
-                    else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                    $http.get(url)
+                        .success(function(data){
+                            stop(url);
+                            callback(data);
+                        })
+                        .error(function(data, status){
+                            stop(url);
+                            callback(getMsgErro(data, status));
+                        });
+                }
+            }
+        };
+    }]);
+
+}());
+(function () {
+   'use strict';
+    globalApp.factory('$newtab',[function(){
+        return {
+            open: function(url, data, method, target) {
+                var form = document.createElement("form");
+                form.action = url;
+                form.method = method || 'post';
+                form.target = target || "_blank";
+                if (data) {
+                  for (var key in data) {
+                    var input = document.createElement("textarea");
+                    input.name = key;
+                    input.value = typeof data[key] === "object" ? JSON.stringify(data[key]) : data[key];
+                    form.appendChild(input);
+                  }
+                }
+                form.style.display = 'none';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        };
+    }]);
+}());
+(function () {
+   'use strict';
+   globalApp.filter('dateToISO', function() {
+        return function(input) {
+            if(input === null || input === "0000-00-00" || input === "0000-00-00 00:00:00"){return "";}
+            input = new Date(input).toISOString();
+            return input;
+        };
+    });
+}());
+
+(function () {
+    globalApp.provider('$api', function() {
+        this.services     = {};
+        this.cList        = false;
+        this.getVariables = '';
+        this.registerServices = function(serv){
+            this.services = serv;
+        };
+        this.cacheList = function(bool){
+            this.cList = bool;
+        };
+        this.concatInUrl = function(getVariables){
+            this.getVariables = getVariables;
+        };
+        this.$get = ['$cache','$global', function ($cache,$global) {
+            function getBaseURL(filename) {
+                var base = window.location.protocol+"//"+window.location.host+"/";
+                if(typeof(filename) !== 'undefined'){base += filename;}
+                return base;
+            }
+            function hat_callback(json, force){
+                if(typeof json.status !== "undefined"){
+                    if(json.status === '1' || json.status === 1){
+                        if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
+                        else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
+                        return true;
+                    }
+                    else{
+                        if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
+                        else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                        return false;
+                    }
+                }
+                if(force === true){
+                    message_erro("Falha ao receber resposta do servidor!");
                     return false;
                 }
-            }
-            if(force === true){
-                message_erro("Falha ao receber resposta do servidor!");
-                return false;
-            }
-            return true;
-        }
-        
-        function serviceExists(service, type){
-            //console.log(service);
-            if(typeof (this.services[service]) === 'undefined'){
-                console.log("Service " + service + " doesn't exists!");
-                return false;
-            }
-            if(this.services[service].type === type){return true;}
-            console.log('Method '+type+' is incorrect for service '  + service + '. Use method ' + this.services[service].type+".");
-            return false;
-        }
-
-        function executeCallback(service,fn, params){
-            if(typeof(fn) !== 'function'){return true;}
-            if($cache.has(service+"/"+params)){
-                fn($cache.get(service+"/"+params));
                 return true;
             }
-            return false;
-        }        
 
-        function get(service, fn, params){
-            if(typeof params !== 'string'){params = '';}
-            else{params = "/"+params;}
-            if(false === this.serviceExists(service, 'get')){return;}
-            if(true  === this.executeCallback(service, fn,params)){return;}
-            var url = (this.services[service].urltype === 'cache')?
-                    getUrlFiles(this.services[service].url):
-                    getBaseURL(this.services[service].url)+params+this.getVariables;
-            $global.request(url, function(data){
-                fn(data);
-                $cache.save(service+'/'+params, data);
-                //hat_callback(data, true);
-            });
-        }
-
-        function save(service, data, fn){
-            if(false === this.serviceExists(service, 'set')){return;}
-            if(typeof data === 'undefined'){return;}
-            var url = getBaseURL(this.services[service].url)+this.getVariables;
-            $global.request(url,fn, data);
-        }
-
-        function list(service, fn, params){
-            if(false === this.serviceExists(service, 'list')){return;}
-            var self = this;
-            if(this.cList){
-                var s = service + "_"+params;
-                if($cache.has(s)){
-                    fn($cache.get(s));
-                    return;
+            function serviceExists(service, type){
+                if(typeof (this.services[service]) === 'undefined'){
+                    console.log("Service " + service + " doesn't exists!");
+                    return false;
                 }
+                if(this.services[service].type === type){return true;}
+                console.log('Method '+type+' is incorrect for service '  + service + '. Use method ' + this.services[service].type+".");
+                return false;
             }
-            
-            var url = getBaseURL(this.services[service].url);
-            if(typeof params === 'string'){url+='/'+params;}
-            url+=this.getVariables;
 
-            $global.request(url, function(data){
-                fn(data);
-                hat_callback(data, false);
-                if(self.cList){$cache.save(s, data);}
-            });
-        }
+            function executeCallback(service,fn, params){
+                if(typeof(fn) !== 'function'){return true;}
+                if($cache.has(service+"/"+params)){
+                    fn($cache.get(service+"/"+params));
+                    return true;
+                }
+                return false;
+            }        
 
-        function drop(service, params, fn){
-            if(typeof params !== 'string'){return;}
-            if(false === this.serviceExists(service, 'drop')){return;}
-            var url = getBaseURL(this.services[service].url);
-            url+='/'+params+this.getVariables;
-            $global.request(url,fn);
-        }
-        
-        return {
-            list            : list,
-            drop            : drop,
-            save            : save,
-            get             : get,
-            executeCallback : executeCallback,
-            serviceExists   : serviceExists,
-            services        : this.services,
-            cList           : this.cList,
-            getVariables    : this.getVariables
-        };
-    }];
-});
+            function get(service, fn, params){
+                if(typeof params !== 'string'){params = '';}
+                else{params = "/"+params;}
+                if(false === this.serviceExists(service, 'get')){return;}
+                if(true  === this.executeCallback(service, fn,params)){return;}
+                var url = (this.services[service].urltype === 'cache')?
+                        getUrlFiles(this.services[service].url):
+                        getBaseURL(this.services[service].url)+params+this.getVariables;
+                $global.request(url, function(data){
+                    fn(data);
+                    $cache.save(service+'/'+params, data);
+                    //hat_callback(data, true);
+                });
+            }
+
+            function save(service, data, fn){
+                if(false === this.serviceExists(service, 'set')){return;}
+                if(typeof data === 'undefined'){return;}
+                var url = getBaseURL(this.services[service].url)+this.getVariables;
+                $global.request(url,fn, data);
+            }
+
+            function list(service, fn, params){
+                if(false === this.serviceExists(service, 'list')){return;}
+                var sf = this;
+                if(sf.cList){
+                    var s = service + "_"+params;
+                    if($cache.has(s)){
+                        fn($cache.get(s));
+                        return;
+                    }
+                }
+
+                var url = getBaseURL(this.services[service].url);
+                if(typeof params === 'string'){url+='/'+params;}
+                url+=this.getVariables;
+
+                $global.request(url, function(data){
+                    fn(data);
+                    hat_callback(data, false);
+                    if(sf.cList){$cache.save(s, data);}
+                });
+            }
+
+            function drop(service, params, fn){
+                if(typeof params !== 'string'){return;}
+                if(false === this.serviceExists(service, 'drop')){return;}
+                var url = getBaseURL(this.services[service].url);
+                url+='/'+params+this.getVariables;
+                $global.request(url,fn);
+            }
+
+            return {
+                list            : list,
+                drop            : drop,
+                save            : save,
+                get             : get,
+                executeCallback : executeCallback,
+                serviceExists   : serviceExists,
+                hat_callback    : hat_callback,
+                services        : this.services,
+                cList           : this.cList,
+                getVariables    : this.getVariables,
+            };
+        }];
+    });
+}());
