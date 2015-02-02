@@ -50,6 +50,33 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
 });
 }());
 (function () {
+   'use strict';
+   globalApp.directive("nestedMenu", ['$compile',function ($compile) {
+
+    return {
+            restrict: 'E',
+            replace: true,
+            scope: {
+                menu: '='
+            },
+            template: '<ul><li ng-repeat="item in menu"><a href="{{item.url}}"><i class="{{item.icon]}}"></i> {{item.name}}</a><span ng-if="item.Children.length > 0"><nestedMenu menu="item.Children"></nestedMenu></span></li></ul>',
+            compile: function (el) {
+                var contents = el.contents().remove();
+                var compiled;
+                return function(scope,el){
+                    if(!compiled)
+                        compiled = $compile(contents);
+
+                    compiled(scope,function(clone){
+                        el.append(clone);
+                    });
+                };
+            }
+        };
+
+    }]);
+}());
+(function () {
     'use strict';
     globalApp.directive('ngReallyClick', ['$modal', function($modal) {
       var ModalInstanceCtrl = function($scope, $modalInstance) {
@@ -195,12 +222,25 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
     });
 }());
 
-(function () {
-    globalApp.provider('$api', function() {
-        this.services     = {};
-        this.cList        = false;
-        this.getVariables = '';
+
+globalApp.provider('$api', function() {
+        this.services       = {};
+        this.check          = {};
+        this.inverseservice = {};
+        this.quene          = [];
+        this.cList          = false;
+        this.restricted     = false;
+        this.pecbk          = null;
+        this.getVariables   = '';
         this.registerServices = function(serv){
+            this.check    = {permissions:[]};
+            for(var i in serv){
+                serv[i].permission = true;
+                if(typeof serv[i].urltype === 'undefined'){continue;}
+                if(serv[i].urltype        !== "common"   ){continue;}
+                this.check.permissions.push(serv[i].url);
+                this.inverseservice[serv[i].url] = i;
+            }
             this.services = serv;
         };
         this.cacheList = function(bool){
@@ -209,7 +249,47 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
         this.concatInUrl = function(getVariables){
             this.getVariables = getVariables;
         };
-        this.$get = ['$cache','$global', function ($cache,$global) {
+        this.permissionLocation = function(location){
+            this.pecbk = location;
+        };
+        
+        this.$get = ['$cache','$global','$location', function ($cache,$global,$location) {
+            function execCallback(self, callback, service, fn, params){
+                if(typeof self.services[service] === 'undefined'){
+                    console.log('undefined service');
+                    return;
+                }
+                if(typeof self.services[service].permission === 'undefined'){self.services[service].permission = true;}
+                if(self.services[service].permission === false){
+                    var location = self.pecbk;
+                    if(location !== null){$location.path('/'+location); }
+                    return message_erro("Você não tem permissão para acessar esta página");
+                }
+                return callback(self,service, fn, params);
+            }
+            function restrictServices(self, callback, service, fn, params) {
+                if(this.restricted === true){ 
+                    if(self.quene.length !== 0){return execCallback(self, callback, service, fn, params);}
+                    self.quene.push([callback, service, fn, params]);
+                    return;
+                }
+                self.quene.push([callback, service, fn, params]);
+                this.restricted = true;
+                
+                var url = getBaseURL('usuario/perfil/userpermissions&ajax=1');
+                $global.request(url, function(data){
+                    for(var i in data){
+                        if(typeof self.inverseservice[data[i]] === 'undefined'){continue;}
+                        var k = self.inverseservice[data[i]];
+                        self.services[k].permission = false;
+                    }
+                    for(var j in self.quene){
+                        var cbk = self.quene[j][0];
+                        execCallback(self, cbk, self.quene[j][1],self.quene[j][2],self.quene[j][3]);
+                   }
+                    self.quene = [];
+                }, self.check);
+            }
             function getBaseURL(filename) {
                 var base = window.location.protocol+"//"+window.location.host+"/";
                 if(typeof(filename) !== 'undefined'){base += filename;}
@@ -255,55 +335,64 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
             }        
 
             function get(service, fn, params){
-                if(typeof params !== 'string'){params = '';}
-                else{params = "/"+params;}
-                if(false === this.serviceExists(service, 'get')){return;}
-                if(true  === this.executeCallback(service, fn,params)){return;}
-                var url = (this.services[service].urltype === 'cache')?
-                        getUrlFiles(this.services[service].url):
-                        getBaseURL(this.services[service].url)+params+this.getVariables;
-                $global.request(url, function(data){
-                    fn(data);
-                    $cache.save(service+'/'+params, data);
-                    //hat_callback(data, true);
-                });
+                restrictServices(this, function(self, service, fn, params){
+                    if(typeof params !== 'string'){params = '';}
+                    else{params = "/"+params;}
+                    if(false === self.serviceExists(service, 'get')){return;}
+                    if(true  === self.executeCallback(service, fn,params)){return;}
+                    var url = (self.services[service].urltype === 'cache')?
+                            getUrlFiles(self.services[service].url):
+                            getBaseURL(self.services[service].url)+params+self.getVariables;
+                    $global.request(url, function(data){
+                        fn(data);
+                        $cache.save(service+'/'+params, data);
+                        //hat_callback(data, true);
+                    });
+                }, service, fn, params);
+                
             }
 
-            function save(service, data, fn){
-                if(false === this.serviceExists(service, 'set')){return;}
-                if(typeof data === 'undefined'){return;}
-                var url = getBaseURL(this.services[service].url)+this.getVariables;
-                $global.request(url,fn, data);
+            function save(service, fn, data){
+                restrictServices(this, function(self, service, data, fn){
+                    if(false === self.serviceExists(service, 'set')){return;}
+                    if(typeof data === 'undefined'){return;}
+                    var url = getBaseURL(self.services[service].url)+self.getVariables;
+                    $global.request(url,fn, data);
+                }, service, fn, data);
             }
 
             function list(service, fn, params){
-                if(false === this.serviceExists(service, 'list')){return;}
-                var sf = this;
-                if(sf.cList){
-                    var s = service + "_"+params;
-                    if($cache.has(s)){
-                        fn($cache.get(s));
-                        return;
+                restrictServices(this, function(self,service, fn, params){
+                    if(false === self.serviceExists(service, 'list')){return;}
+                    var sf = self;
+                    if(sf.cList){
+                        var s = service + "_"+params;
+                        if($cache.has(s)){
+                            fn($cache.get(s));
+                            return;
+                        }
                     }
-                }
 
-                var url = getBaseURL(this.services[service].url);
-                if(typeof params === 'string'){url+='/'+params;}
-                url+=this.getVariables;
+                    var url = getBaseURL(self.services[service].url);
+                    if(typeof params === 'string'){url+='/'+params;}
+                    url+=self.getVariables;
 
-                $global.request(url, function(data){
-                    fn(data);
-                    hat_callback(data, false);
-                    if(sf.cList){$cache.save(s, data);}
-                });
+                    $global.request(url, function(data){
+                        fn(data);
+                        hat_callback(data, false);
+                        if(sf.cList){$cache.save(s, data);}
+                    });
+                }, service, fn, params);
             }
 
             function drop(service, params, fn){
-                if(typeof params !== 'string'){return;}
-                if(false === this.serviceExists(service, 'drop')){return;}
-                var url = getBaseURL(this.services[service].url);
-                url+='/'+params+this.getVariables;
-                $global.request(url,fn);
+                restrictServices(this, function(self, service, fn, params){
+                    if(typeof params !== 'string'){return;}
+                    if(false === self.serviceExists(service, 'drop')){return;}
+                    var url = getBaseURL(self.services[service].url);
+                    url+='/'+params+self.getVariables;
+                    $global.request(url,fn);
+                }, service, fn, params);
             }
 
             return {
@@ -315,9 +404,12 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
                 serviceExists   : serviceExists,
                 hat_callback    : hat_callback,
                 services        : this.services,
+                check           : this.check,
+                inverseservice  : this.inverseservice,
+                quene           : this.quene,
                 cList           : this.cList,
-                getVariables    : this.getVariables,
+                pecbk           : this.pecbk,
+                getVariables    : this.getVariables
             };
         }];
-    });
-}());
+});
