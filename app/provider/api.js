@@ -1,4 +1,3 @@
-
 (function () {
    'use strict';
     globalApp.provider('$api', function() {
@@ -48,8 +47,6 @@
                 function restrictServices(self, callback, service, fn, params) {
                     if(self.restricted === true){ 
                         if(self.quene.length !== 0){return execCallback(self, callback, service, fn, params);}
-                        self.quene.push([callback, service, fn, params]);
-                        return;
                     }
                     self.quene.push([callback, service, fn, params]);
                     self.restricted = true;
@@ -62,10 +59,9 @@
                             self.services[k].permission = false;
                         }
                         for(var j in self.quene){
-                            var cbk = self.quene[j][0];
-                            execCallback(self, cbk, self.quene[j][1],self.quene[j][2],self.quene[j][3]);
-                       }
-                        self.quene = [];
+                            execCallback(self, self.quene[j][0], self.quene[j][1],self.quene[j][2],self.quene[j][3]);
+                        }
+                       self.quene = [];
                     }, self.check);
                 }
                 function getBaseURL(filename) {
