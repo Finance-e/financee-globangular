@@ -1,117 +1,118 @@
 
-globalApp.provider('$api', function() {
-        this.services       = {};
-        this.check          = {};
-        this.inverseservice = {};
-        this.quene          = [];
-        this.cList          = false;
-        this.restricted     = false;
-        this.pecbk          = null;
-        this.getVariables   = '';
-        this.registerServices = function(serv){
-            this.check    = {permissions:[]};
-            for(var i in serv){
-                serv[i].permission = true;
-                if(typeof serv[i].urltype === 'undefined'){continue;}
-                if(serv[i].urltype        !== "common"   ){continue;}
-                this.check.permissions.push(serv[i].url);
-                this.inverseservice[serv[i].url] = i;
-            }
-            this.services = serv;
-        };
-        this.cacheList = function(bool){
-            this.cList = bool;
-        };
-        this.concatInUrl = function(getVariables){
-            this.getVariables = getVariables;
-        };
-        this.permissionLocation = function(location){
-            this.pecbk = location;
-        };
-        
-        this.$get = ['$cache','$global','$location', function ($cache,$global,$location) {
-            function execCallback(self, callback, service, fn, params){
-                if(typeof self.services[service] === 'undefined'){
-                    console.log('undefined service');
-                    return;
+(function () {
+   'use strict';
+    globalApp.provider('$api', function() {
+            this.services       = {};
+            this.check          = {};
+            this.inverseservice = {};
+            this.quene          = [];
+            this.cList          = false;
+            this.restricted     = false;
+            this.pecbk          = null;
+            this.getVariables   = '';
+            this.registerServices = function(serv){
+                this.check    = {permissions:[]};
+                for(var i in serv){
+                    serv[i].permission = true;
+                    if(typeof serv[i].urltype === 'undefined'){continue;}
+                    if(serv[i].urltype        !== "common"   ){continue;}
+                    this.check.permissions.push(serv[i].url);
+                    this.inverseservice[serv[i].url] = i;
                 }
-                if(typeof self.services[service].permission === 'undefined'){self.services[service].permission = true;}
-                if(self.services[service].permission === false){
-                    var location = self.pecbk;
-                    if(location !== null){$location.path('/'+location); }
-                    return message_erro("Você não tem permissão para acessar esta página");
+                this.services = serv;
+            };
+            this.cacheList = function(bool){
+                this.cList = bool;
+            };
+            this.concatInUrl = function(getVariables){
+                this.getVariables = getVariables;
+            };
+            this.permissionLocation = function(location){
+                this.pecbk = location;
+            };
+
+            this.$get = ['$cache','$global','$location', function ($cache,$global,$location) {
+                function execCallback(self, callback, service, fn, params){
+                    if(typeof self.services[service] === 'undefined'){
+                        console.log('undefined service');
+                        return;
+                    }
+                    if(typeof self.services[service].permission === 'undefined'){self.services[service].permission = true;}
+                    if(self.services[service].permission === false){
+                        var location = self.pecbk;
+                        if(location !== null){$location.path('/'+location); }
+                        return message_erro("Você não tem permissão para acessar esta página");
+                    }
+                    return callback(self,service, fn, params);
                 }
-                return callback(self,service, fn, params);
-            }
-            function restrictServices(self, callback, service, fn, params) {
-                if(this.restricted === true){ 
-                    if(self.quene.length !== 0){return execCallback(self, callback, service, fn, params);}
+                function restrictServices(self, callback, service, fn, params) {
+                    if(self.restricted === true){ 
+                        if(self.quene.length !== 0){return execCallback(self, callback, service, fn, params);}
+                        self.quene.push([callback, service, fn, params]);
+                        return;
+                    }
                     self.quene.push([callback, service, fn, params]);
-                    return;
+                    self.restricted = true;
+
+                    var url = getBaseURL('usuario/perfil/userpermissions&ajax=1');
+                    $global.request(url, function(data){
+                        for(var i in data){
+                            if(typeof self.inverseservice[data[i]] === 'undefined'){continue;}
+                            var k = self.inverseservice[data[i]];
+                            self.services[k].permission = false;
+                        }
+                        for(var j in self.quene){
+                            var cbk = self.quene[j][0];
+                            execCallback(self, cbk, self.quene[j][1],self.quene[j][2],self.quene[j][3]);
+                       }
+                        self.quene = [];
+                    }, self.check);
                 }
-                self.quene.push([callback, service, fn, params]);
-                this.restricted = true;
-                
-                var url = getBaseURL('usuario/perfil/userpermissions&ajax=1');
-                $global.request(url, function(data){
-                    for(var i in data){
-                        if(typeof self.inverseservice[data[i]] === 'undefined'){continue;}
-                        var k = self.inverseservice[data[i]];
-                        self.services[k].permission = false;
+                function getBaseURL(filename) {
+                    var base = window.location.protocol+"//"+window.location.host+"/";
+                    if(typeof(filename) !== 'undefined'){base += filename;}
+                    return base;
+                }
+                function hat_callback(json, force){
+                    if(typeof json.status !== "undefined"){
+                        if(json.status === '1' || json.status === 1){
+                            if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
+                            else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
+                            return true;
+                        }
+                        else{
+                            if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
+                            else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                            return false;
+                        }
                     }
-                    for(var j in self.quene){
-                        var cbk = self.quene[j][0];
-                        execCallback(self, cbk, self.quene[j][1],self.quene[j][2],self.quene[j][3]);
-                   }
-                    self.quene = [];
-                }, self.check);
-            }
-            function getBaseURL(filename) {
-                var base = window.location.protocol+"//"+window.location.host+"/";
-                if(typeof(filename) !== 'undefined'){base += filename;}
-                return base;
-            }
-            function hat_callback(json, force){
-                if(typeof json.status !== "undefined"){
-                    if(json.status === '1' || json.status === 1){
-                        if(typeof(json.success) !== 'undefined'){message_success(json.success, 5000);}
-                        else {message_alert("Dados inseridos sem confirmação do servidor. Não é possível determinar se a operação foi concluída com sucesso!");}
-                        return true;
-                    }
-                    else{
-                        if(typeof(json.erro) !== 'undefined'){message_erro(json.erro, 5000);}
-                        else {message_alert("Falha ao salvar dados no servidor. Não é possível determinar qual o tipo de falha que ocorreu!");}
+                    if(force === true){
+                        message_erro("Falha ao receber resposta do servidor!");
                         return false;
                     }
-                }
-                if(force === true){
-                    message_erro("Falha ao receber resposta do servidor!");
-                    return false;
-                }
-                return true;
-            }
-
-            function serviceExists(service, type){
-                if(typeof (this.services[service]) === 'undefined'){
-                    console.log("Service " + service + " doesn't exists!");
-                    return false;
-                }
-                if(this.services[service].type === type){return true;}
-                console.log('Method '+type+' is incorrect for service '  + service + '. Use method ' + this.services[service].type+".");
-                return false;
-            }
-
-            function executeCallback(service,fn, params){
-                if(typeof(fn) !== 'function'){return true;}
-                if($cache.has(service+"/"+params)){
-                    fn($cache.get(service+"/"+params));
                     return true;
                 }
-                return false;
-            }        
 
-            function get(service, fn, params){
-                restrictServices(this, function(self, service, fn, params){
+                function serviceExists(service, type){
+                    if(typeof (this.services[service]) === 'undefined'){
+                        console.log("Service " + service + " doesn't exists!");
+                        return false;
+                    }
+                    if(this.services[service].type === type){return true;}
+                    console.log('Method '+type+' is incorrect for service '  + service + '. Use method ' + this.services[service].type+".");
+                    return false;
+                }
+
+                function executeCallback(service,fn, params){
+                    if(typeof(fn) !== 'function'){return true;}
+                    if($cache.has(service+"/"+params)){
+                        fn($cache.get(service+"/"+params));
+                        return true;
+                    }
+                    return false;
+                }        
+
+                function get(self, service, fn, params){
                     if(typeof params !== 'string'){params = '';}
                     else{params = "/"+params;}
                     if(false === self.serviceExists(service, 'get')){return;}
@@ -122,23 +123,18 @@ globalApp.provider('$api', function() {
                     $global.request(url, function(data){
                         fn(data);
                         $cache.save(service+'/'+params, data);
-                        //hat_callback(data, true);
                     });
-                }, service, fn, params);
-                
-            }
 
-            function save(service, fn, data){
-                restrictServices(this, function(self, service, data, fn){
+                }
+
+                function save(self, service, fn, params){
                     if(false === self.serviceExists(service, 'set')){return;}
-                    if(typeof data === 'undefined'){return;}
+                    if(typeof params === 'undefined'){return;}
                     var url = getBaseURL(self.services[service].url)+self.getVariables;
-                    $global.request(url,fn, data);
-                }, service, fn, data);
-            }
+                    $global.request(url,fn, params);
+                }
 
-            function list(service, fn, params){
-                restrictServices(this, function(self,service, fn, params){
+                function list(self, service, fn, params){
                     if(false === self.serviceExists(service, 'list')){return;}
                     var sf = self;
                     if(sf.cList){
@@ -158,34 +154,53 @@ globalApp.provider('$api', function() {
                         hat_callback(data, false);
                         if(sf.cList){$cache.save(s, data);}
                     });
-                }, service, fn, params);
-            }
+                }
 
-            function drop(service, params, fn){
-                restrictServices(this, function(self, service, fn, params){
+                function drop(self, service, fn, params){
                     if(typeof params !== 'string'){return;}
                     if(false === self.serviceExists(service, 'drop')){return;}
                     var url = getBaseURL(self.services[service].url);
                     url+='/'+params+self.getVariables;
                     $global.request(url,fn);
-                }, service, fn, params);
-            }
+                }
 
-            return {
-                list            : list,
-                drop            : drop,
-                save            : save,
-                get             : get,
-                executeCallback : executeCallback,
-                serviceExists   : serviceExists,
-                hat_callback    : hat_callback,
-                services        : this.services,
-                check           : this.check,
-                inverseservice  : this.inverseservice,
-                quene           : this.quene,
-                cList           : this.cList,
-                pecbk           : this.pecbk,
-                getVariables    : this.getVariables
-            };
-        }];
-});
+                function execute(service, fn, params){
+                    restrictServices(this, function(self, service, fn, params){
+                        if(typeof (self.services[service]) === 'undefined'){
+                            console.log("Service " + service + " doesn't exists!");
+                            return false;
+                        }
+                        switch (self.services[service].type){
+                            case 'get':
+                                get(self, service, fn, params);
+                                break;
+                            case 'save':
+                                save(self, service, fn, params);
+                                break;
+                            case 'list':
+                                list(self, service, fn, params);
+                                break;
+                            case 'drop':
+                                drop(self, service, fn, params);
+                                break;
+                            default: console.log('service type: '+self.services[service].type+' doesn\'t exists');
+                        }
+                    }, service, fn, params);
+                }
+
+                return {
+                    execute         : execute,
+                    executeCallback : executeCallback,
+                    serviceExists   : serviceExists,
+                    hat_callback    : hat_callback,
+                    services        : this.services,
+                    check           : this.check,
+                    inverseservice  : this.inverseservice,
+                    quene           : this.quene,
+                    cList           : this.cList,
+                    pecbk           : this.pecbk,
+                    getVariables    : this.getVariables
+                };
+            }];
+    });
+}());

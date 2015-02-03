@@ -39,17 +39,17 @@
             var testApp = angular.module('testApp', ['globalApp'])
                 .config(['$apiProvider', function ($apiProvider) {
                     $apiProvider.registerServices({
-                        'list_cache'  :{type:'list', 'urltype':'cache' , 'url':'fakeapi/cache/list.js' },
-                        'get_cache'   :{type:'get' , 'urltype':'cache' , 'url':'fakeapi/cache/get.js'  },
                         'list_common' :{type:'list', 'urltype':'common', 'url':'fakeapi/cache/list.js'},
                         'get_common'  :{type:'get' , 'urltype':'common', 'url':'fakeapi/common/get.js' },
                         'set_common'  :{type:'set' , 'urltype':'common', 'url':'fakeapi/common/set.js' },
-                        'drop_common' :{type:'drop', 'urltype':'common', 'url':'fakeapi/common/drop.js'}
+                        'drop_common' :{type:'drop', 'urltype':'common', 'url':'fakeapi/common/drop.js'},
+                        'list_cache'  :{type:'list', 'urltype':'cache' , 'url':'fakeapi/cache/list.js' },
+                        'get_cache'   :{type:'get' , 'urltype':'cache' , 'url':'fakeapi/cache/get.js'  }
                     });
                 }])
                 .controller('testeCTRL',['$api','$scope',function($api,$scope) {
                       $scope.vars = [];
-                      $api.list('list_common', function(vars){
+                      $api.execute('list_common', function(vars){
                           $scope.vars = vars;
                       });
                 }]);
