@@ -270,7 +270,9 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
                 }
                 function restrictServices(self, callback, service, fn, params) {
                     if(self.restricted === true){ 
-                        if(self.quene.length !== 0){return execCallback(self, callback, service, fn, params);}
+                        if(self.quene.length === 0){return execCallback(self, callback, service, fn, params);}
+                        self.quene.push([callback, service, fn, params]);
+                        return;
                     }
                     self.quene.push([callback, service, fn, params]);
                     self.restricted = true;
