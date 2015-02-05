@@ -350,7 +350,7 @@ var globalApp = angular.module('globalApp', ['angular-loading-bar', 'ngAnimate',
                 }
 
                 function save(self, service, fn, params){
-                    if(false === self.serviceExists(service, 'set')){return;}
+                    if(false === self.serviceExists(service, 'save')){return;}
                     if(typeof params === 'undefined'){return;}
                     var url = getBaseURL(self.services[service].url)+self.getVariables;
                     $global.request(url,fn, params);
